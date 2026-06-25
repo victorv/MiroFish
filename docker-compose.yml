@@ -6,9 +6,37 @@ services:
     container_name: mirofish
     env_file:
       - .env
+    # Port 80 is only exposed on localhost; cloudflared routes public traffic.
+    # Remove or comment this line once the tunnel is confirmed working.
     ports:
-      - "3000:3000"
-      - "5001:5001"
+      - "127.0.0.1:80:80"
     restart: unless-stopped
     volumes:
       - ./backend/uploads:/app/backend/uploads
+    networks:
+      - mirofish_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    # The tunnel token is obtained from the Cloudflare Zero Trust dashboard.
+    # Ingress rules are configured there; point your hostname to http://mirofish:80
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      mirofish:
+        condition: service_healthy
+    networks:
+      - mirofish_net
+
+networks:
+  mirofish_net:
+    driver: bridge

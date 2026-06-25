@@ -1,9 +1,12 @@
 import axios from 'axios'
 import i18n from '../i18n'
 
-// 创建axios实例
+// In production the frontend is served by nginx on the same origin.
+// Relative URLs (/api/…) are proxied by nginx to the backend.
+// In development the Vite dev-server proxy handles the same routing.
+// VITE_API_BASE_URL can still be set to override (e.g. a separate API domain).
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001',
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? '',
   timeout: 300000, // 5分钟超时（本体生成可能需要较长时间）
   headers: {
     'Content-Type': 'application/json'
